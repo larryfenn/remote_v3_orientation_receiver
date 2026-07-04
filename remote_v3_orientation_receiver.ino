@@ -37,6 +37,7 @@ typedef struct __attribute__((packed)) {
   uint8_t id;
   uint32_t time;
   uint8_t deviceType;
+  uint8_t seq;
   int16_t w;
   int16_t x;
   int16_t y;
@@ -45,11 +46,12 @@ typedef struct __attribute__((packed)) {
 } orientation_packet_t;
 
 // The heartbeat payload is a strict prefix of the orientation packet: just
-// the id, timestamp, and deviceType.
+// the id, timestamp, deviceType, and sequence number.
 typedef struct __attribute__((packed)) {
   uint8_t id;
   uint32_t time;
   uint8_t deviceType;
+  uint8_t seq;
 } heartbeat_packet_t;
 
 // The largest raw payload that flows through the queue (an orientation packet).
@@ -151,6 +153,7 @@ static void forwarding_task(void *arg)
 // the forwarding task remains the single serial writer.
 static void heartbeat_task(void *arg)
 {
+  uint8_t seq = 0;
   for (;;) {
     vTaskDelay(pdMS_TO_TICKS(HEARTBEAT_INTERVAL_MS));
 
@@ -158,6 +161,7 @@ static void heartbeat_task(void *arg)
     hb.id = RECEIVER_DEVICE_ID;
     hb.time = millis();
     hb.deviceType = HEARTBEAT_DEVICE_TYPE;
+    hb.seq = seq++;
 
     queued_frame_t frame;
     frame.len = sizeof(hb);
